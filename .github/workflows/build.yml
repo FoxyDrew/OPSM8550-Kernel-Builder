@@ -113,10 +113,19 @@ jobs:
       - name: Set up swap (16G)
         run: |
           set -euo pipefail
-          sudo fallocate -l 16G /swapfile
-          sudo chmod 600 /swapfile
-          sudo mkswap /swapfile
-          sudo swapon /swapfile
+          SWAPFILE="${RUNNER_TEMP:-/tmp}/kernel-build-swapfile"
+
+          if swapon --show=NAME --noheadings | grep -Fxq "$SWAPFILE"; then
+            echo "Swap is already enabled at ${SWAPFILE}"
+            swapon --show
+            exit 0
+          fi
+
+          sudo rm -f "$SWAPFILE"
+          sudo fallocate -l 16G "$SWAPFILE"
+          sudo chmod 600 "$SWAPFILE"
+          sudo mkswap "$SWAPFILE"
+          sudo swapon "$SWAPFILE"
           swapon --show
 
       - name: Install build dependencies
